@@ -9,7 +9,7 @@ try:
     import subprocess
     import sys
 
-    REQUIRED_MODULES = ['requests', 'numpy', 'tensorflow', 'keras']
+    REQUIRED_MODULES = ['requests', 'numpy', 'tensorflow', 'keras', 'elasticsearch']
 
     for module in REQUIRED_MODULES:
         try:
