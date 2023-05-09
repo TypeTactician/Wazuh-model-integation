@@ -26,18 +26,37 @@ try:
     import numpy as np
     from tensorflow import keras
     import os
+    import json
+    from elasticsearch import Elasticsearch
 
     api_ip = input("Enter the Wazuh API IP address: ")
     api_port = input("Enter the Wazuh API port: ")
     api_username = input("Enter the Wazuh API username: ")
     api_password = input("Enter the Wazuh API password: ")
+    
+    es = Elasticsearch(
+        [f"{wazuh_ip}:{wazuh_port}"],
+        http_auth=(wazuh_username, wazuh_password),
+        scheme="http",
+        port=wazuh_port,
+    )
 
     def get_alerts():
-        url = f"http://{api_ip}:{api_port}/alerts"
-        response = requests.get(url, auth=(api_username, api_password))
-        response.raise_for_status()
-        alerts_list = response.json()
-        return alerts_list["data"]["affected_items"]
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {"match": {"_index": "wazuh-alerts-*"}},
+                        {"match": {"alert.status": "opened"}},
+                        {"match": {"event.kind": "alert"}}
+                    ]
+                }
+            },
+            "size": 100
+        }
+        res = es.search(index="*", body=query)
+        alerts = [alert["_source"] for alert in res["hits"]["hits"]]
+        return alerts
 
     def delete_alert(alert_id):
         url = f"http://{api_ip}:{api_port}/alerts/{alert_id}"
